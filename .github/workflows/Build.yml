@@ -24,7 +24,7 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Install System Dependencies
+      - name: Install System Dependencies & System AIDL
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -50,17 +50,34 @@ jobs:
             unzip \
             aidl
 
-      - name: Install Build Tools
+      - name: Install Buildozer & Cython
         run: |
           python -m pip install --upgrade pip setuptools wheel
-          # Cython < 3.0 avoids deprecated DEF syntax and C-API breakage in Kivy 2.x
           pip install "Cython>=0.29.33,<3.0.0" buildozer
 
-      - name: Pre-Accept Android SDK Licenses
+      - name: Pre-Install Android SDK & Link Legacy Tools
         run: |
-          mkdir -p ~/.buildozer/android/platform/android-sdk/licenses
-          echo -e "24333f8a63b1d79439037b4e12351dd218a95717\n8938612766660abaf82caec50e3004f2b0d08c16\n7339e72b4255507971a9a612cd46860b792e8c77" > ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
-          echo -e "84831b9409646a2b8e447d6a8c9db09440cc9c2d" > ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-preview-license
+          SDK_DIR="$HOME/.buildozer/android/platform/android-sdk"
+          mkdir -p "$SDK_DIR/cmdline-tools"
+          mkdir -p "$SDK_DIR/licenses"
+
+          # 1. Download official Android command-line tools
+          wget -q https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O cmdline-tools.zip
+          unzip -q cmdline-tools.zip -d "$SDK_DIR/cmdline-tools"
+          mv "$SDK_DIR/cmdline-tools/cmdline-tools" "$SDK_DIR/cmdline-tools/latest"
+          rm cmdline-tools.zip
+
+          # 2. Fix Buildozer's expected legacy path via symlink
+          ln -s "$SDK_DIR/cmdline-tools/latest" "$SDK_DIR/tools"
+
+          # 3. Pre-accept licenses
+          echo -e "24333f8a63b1d79439037b4e12351dd218a95717\n8938612766660abaf82caec50e3004f2b0d08c16\n7339e72b4255507971a9a612cd46860b792e8c77" > "$SDK_DIR/licenses/android-sdk-license"
+          echo -e "84831b9409646a2b8e447d6a8c9db09440cc9c2d" > "$SDK_DIR/licenses/android-sdk-preview-license"
+
+          # 4. Install platform-tools and build-tools
+          export PATH="$SDK_DIR/cmdline-tools/latest/bin:$PATH"
+          yes | sdkmanager --licenses || true
+          sdkmanager "platforms;android-33" "build-tools;33.0.2" "platform-tools"
 
       - name: Build APK via Buildozer
         run: |
