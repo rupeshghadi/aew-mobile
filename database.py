@@ -5,11 +5,11 @@ from datetime import datetime
 
 # Determine base application directory (works on both Android and Desktop)
 def get_app_dir():
-    try:
+    # Detect Android native app path
+    if "ANDROID_ARGUMENT" in os.environ or "PYTHON_SERVICE_ARGUMENT" in os.environ:
         from android.storage import app_storage_path
         return app_storage_path()
-    except ImportError:
-        return os.path.dirname(os.path.abspath(__file__))
+    return os.path.dirname(os.path.abspath(__file__))
 
 DB_PATH = os.path.join(get_app_dir(), "adarsh_billing.db")
 
