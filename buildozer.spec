@@ -19,7 +19,10 @@ android.permissions = READ_EXTERNAL_STORAGE,WRITE_EXTERNAL_STORAGE,INTERNET
 android.api = 34
 android.minapi = 26
 android.ndk = 25b
-android.archs = arm64-v8a, armeabi-v7a
+android.build_tools_version = 34.0.0
+
+# Tell buildozer to use system SDK path
+android.sdk_path = /usr/local/lib/android/sdk
 
 [buildozer]
 log_level = 2
