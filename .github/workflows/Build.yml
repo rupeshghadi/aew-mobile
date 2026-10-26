@@ -49,10 +49,19 @@ jobs:
             zip \
             unzip
 
-      - name: Install Android SDK Build-Tools (AIDL)
+      - name: Configure Android SDK & Fix Legacy Buildozer Paths
         run: |
           export ANDROID_HOME=$ANDROID_SDK_ROOT
-          export PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$PATH
+          
+          # Fix: Link modern cmdline-tools to legacy 'tools' path expected by Buildozer
+          if [ -d "$ANDROID_HOME/cmdline-tools/latest" ] && [ ! -d "$ANDROID_HOME/tools" ]; then
+            sudo ln -s "$ANDROID_HOME/cmdline-tools/latest" "$ANDROID_HOME/tools"
+          fi
+          
+          # Ensure runner user has write permissions to Android SDK
+          sudo chown -R runner:docker "$ANDROID_HOME"
+          
+          export PATH=$ANDROID_HOME/tools/bin:$ANDROID_HOME/platform-tools:$PATH
           
           # Accept licenses
           yes | sdkmanager --licenses || true
@@ -60,10 +69,10 @@ jobs:
           # Install platforms and build-tools containing aidl
           sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
           
-          # Export to environment for all subsequent steps
+          # Export to environment for subsequent steps
           echo "$ANDROID_HOME/build-tools/34.0.0" >> $GITHUB_PATH
           echo "$ANDROID_HOME/platform-tools" >> $GITHUB_PATH
-          echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> $GITHUB_PATH
+          echo "$ANDROID_HOME/tools/bin" >> $GITHUB_PATH
           echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
           echo "ANDROID_SDK_ROOT=$ANDROID_HOME" >> $GITHUB_ENV
 
