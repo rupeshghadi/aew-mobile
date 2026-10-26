@@ -6,21 +6,20 @@ source.dir = .
 source.include_exts = py,png,jpg,kv,atlas,ttf,db
 version = 1.0.0
 
-# Dependencies to package inside APK
-requirements = python3,kivy==2.3.0,kivymd,sqlite3,urllib3,certifi
+# Pin python3 to 3.11 to prevent pulling 3.14 alpha headers
+requirements = python3==3.11.9,hostpython3==3.11.9,kivy,kivymd==1.2.0,sqlite3,urllib3,certifi
 
 orientation = portrait
 fullscreen = 0
 
-# Android permissions for storage, camera/receipt scanning, and network
 android.permissions = READ_EXTERNAL_STORAGE,WRITE_EXTERNAL_STORAGE,INTERNET
 
-# API levels
-android.api = 34
-android.minapi = 26
+# Target API 33 with matching build tools
+android.api = 33
+android.minapi = 21
 android.ndk = 25b
-android.build_tools_version = 34.0.0
-android.sdk_path = /usr/local/lib/android/sdk
+android.build_tools_version = 33.0.2
+android.archs = arm64-v8a
 
 [buildozer]
 log_level = 2
