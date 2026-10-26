@@ -1,10 +1,15 @@
 import os
 from datetime import datetime
 from kivy.lang import Builder
+from kivy.core.window import Window
+from kivy.utils import platform
 from kivymd.app import MDApp
-from kivymd.uix.snackbar import Snackbar
 
-from database import init_db, get_db, backup_database, restore_database
+from database import init_db, get_db, backup_database, restore_database, get_app_dir
+
+# Set portrait preview window size for local desktop testing
+if platform != "android":
+    Window.size = (390, 750)
 
 KV = '''
 MDBoxLayout:
@@ -18,7 +23,7 @@ MDBoxLayout:
     MDBottomNavigation:
         id: nav_bar
 
-        # ---------------- DASHBOARD TAB ----------------
+        # ---------------- 1. DASHBOARD OVERVIEW TAB ----------------
         MDBottomNavigationItem:
             name: "tab_dashboard"
             text: "Overview"
@@ -35,7 +40,7 @@ MDBoxLayout:
                         orientation: "vertical"
                         padding: "16dp"
                         size_hint_y: None
-                        height: "100dp"
+                        height: "105dp"
                         elevation: 1
                         md_bg_color: 0.94, 0.97, 1.0, 1.0
 
@@ -73,7 +78,7 @@ MDBoxLayout:
                             font_style: "H6"
                             bold: True
 
-        # ---------------- NEW INVOICE TAB ----------------
+        # ---------------- 2. INVOICE GENERATOR TAB ----------------
         MDBottomNavigationItem:
             name: "tab_invoice"
             text: "New Invoice"
@@ -120,7 +125,7 @@ MDBoxLayout:
                         pos_hint: {"center_x": .5}
                         on_release: app.save_invoice()
 
-        # ---------------- CUSTOMER MASTER TAB ----------------
+        # ---------------- 3. CUSTOMER MASTER TAB ----------------
         MDBottomNavigationItem:
             name: "tab_customer"
             text: "Parties"
@@ -158,7 +163,7 @@ MDBoxLayout:
                         pos_hint: {"center_x": .5}
                         on_release: app.save_customer()
 
-        # ---------------- BACKUP & RESTORE TAB ----------------
+        # ---------------- 4. BACKUP & RESTORE TAB ----------------
         MDBottomNavigationItem:
             name: "tab_backup"
             text: "Backups"
@@ -223,7 +228,39 @@ class AEWAndroidApp(MDApp):
         self.refresh_all_data()
 
     def show_toast(self, text):
-        Snackbar(text=text, duration=2.5).open()
+        """Crash-proof toast messaging supporting both Android native and desktop fallbacks."""
+        if platform == "android":
+            try:
+                from jnius import autoclass
+                PythonActivity = autoclass('org.kivy.android.PythonActivity')
+                Toast = autoclass('android.widget.Toast')
+                String = autoclass('java.lang.String')
+                context = PythonActivity.mActivity
+                context.runOnUiThread(
+                    lambda: Toast.makeText(
+                        context,
+                        String(str(text)),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                )
+                return
+            except Exception as e:
+                print(f"[Android Toast Error]: {e}")
+
+        # Desktop fallback
+        try:
+            from kivymd.uix.snackbar import Snackbar
+            from kivymd.uix.label import MDLabel
+            Snackbar(
+                MDLabel(
+                    text=str(text),
+                    theme_text_color="Custom",
+                    text_color=(1, 1, 1, 1),
+                ),
+                duration=2.0
+            ).open()
+        except Exception:
+            print(f"[APP LOG]: {text}")
 
     def recalculate_taxes(self):
         try:
@@ -317,13 +354,7 @@ class AEWAndroidApp(MDApp):
             self.show_toast(f"Backup error: {res}")
 
     def trigger_restore(self):
-        try:
-            from android.storage import app_storage_path
-            base_dir = app_storage_path()
-        except ImportError:
-            base_dir = os.path.dirname(os.path.abspath(__file__))
-
-        backup_dir = os.path.join(base_dir, "backups")
+        backup_dir = os.path.join(get_app_dir(), "backups")
         if not os.path.exists(backup_dir) or not os.listdir(backup_dir):
             self.show_toast("No local backups found to restore.")
             return
