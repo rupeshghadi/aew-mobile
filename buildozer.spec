@@ -20,6 +20,7 @@ android.api = 34
 android.minapi = 26
 android.ndk = 25b
 android.build_tools_version = 34.0.0
+android.sdk_path = /usr/local/lib/android/sdk
 
 [buildozer]
 log_level = 2
