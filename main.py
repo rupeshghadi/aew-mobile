@@ -207,7 +207,7 @@ MDBoxLayout:
                             font_style: "Caption"
                             theme_text_color: "Secondary"
 
-                        MDOutlinedButton:
+                        MDRectangleFlatButton:
                             text: "Restore Latest Backup"
                             on_release: app.trigger_restore()
 '''
@@ -264,8 +264,10 @@ class AEWAndroidApp(MDApp):
 
         with get_db() as conn:
             cur = conn.cursor()
-            cur.execute("INSERT INTO customers (name, tax_id, phone, address) VALUES (?, ?, ?, ?)",
-                        (name, gstin, phone, address))
+            cur.execute(
+                "INSERT INTO customers (name, tax_id, phone, address) VALUES (?, ?, ?, ?)",
+                (name, gstin, phone, address)
+            )
             conn.commit()
 
         self.root.ids.txt_cust_name.text = ""
@@ -315,7 +317,13 @@ class AEWAndroidApp(MDApp):
             self.show_toast(f"Backup error: {res}")
 
     def trigger_restore(self):
-        backup_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "backups")
+        try:
+            from android.storage import app_storage_path
+            base_dir = app_storage_path()
+        except ImportError:
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+
+        backup_dir = os.path.join(base_dir, "backups")
         if not os.path.exists(backup_dir) or not os.listdir(backup_dir):
             self.show_toast("No local backups found to restore.")
             return
